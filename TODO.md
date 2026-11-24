@@ -8,12 +8,8 @@
   `-Wsign-compare` inside Boost; compare with `0U`. It also uses unqualified `size_t` and `std::move` without
   `<utility>`.
 - `include/bignumber/array.hpp`: `capacity()` and `size()` return unqualified `size_t`; use `std::size_t`.
-- `CMakeLists.txt`: `$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include` puts `/include` outside the generator
-  expression, so the installed `bignumber::bignumber` exports the include directory `/include`. Use
-  `$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>`.
 - `CMakePresets.json`: the `benchmark` and `docs` presets set `BIGNUMBER_BENCHMARKS` and `BIGNUMBER_DOCS`, and the
   `docs` build preset builds a `docs` target; `CMakeLists.txt` defines none of them. Add them or drop the presets.
-- `AGENTS.md` still says "No tests exist yet"; describe `test/`, the Boost.Test dependency and the presets.
 - Create `.git-blame-ignore-revs` if the LF-normalization commit should be ignored by `git blame`.
 
 ## Decisions

@@ -30,8 +30,30 @@ cmake --build ../build/bignumber/agent
 ctest --test-dir ../build/bignumber/agent
 ```
 
-No tests exist yet. Tests will live in `test/`; the root `CMakeLists.txt` already calls `include(CTest)` and adds `test/`
-only when `test/CMakeLists.txt` exists.
+### Tests
+
+Tests live in `test/` and use Boost.Test (`find_package(Boost REQUIRED CONFIG COMPONENTS unit_test_framework)`, linked
+dynamically). The root `CMakeLists.txt` calls `include(CTest)` and adds `test/` when `BUILD_TESTING` is on and
+`test/CMakeLists.txt` exists. All test sources build into one executable, `test_bignumber`, registered with CTest under
+the same name:
+
+- `test/test.cpp` defines `BOOST_TEST_MAIN` and `BOOST_TEST_DYN_LINK`; do not put test cases there.
+- `test/test_array.cpp` holds the `Array` tests (suite `TestBigNumber`).
+- Add each new test file to `add_executable(test_bignumber ...)` in `test/CMakeLists.txt`.
+
+### Presets
+
+`CMakePresets.json` defines configure, build and test presets `debug`, `release`, `asan` and `werror`. Their build
+directories are `../build/bignumber/presets/<preset>`, so they are also out of tree:
+
+```bash
+cmake --preset werror
+cmake --build --preset werror
+ctest --preset werror
+```
+
+The `benchmark` and `docs` presets refer to options and a target that `CMakeLists.txt` does not define yet (see
+`TODO.md`); do not use them.
 
 ### Warnings
 
@@ -51,7 +73,12 @@ The root `CMakeLists.txt` defaults `CMAKE_INSTALL_PREFIX` to `$HOME`. `cmake --i
 
 - the shared library in `${CMAKE_INSTALL_LIBDIR}` (`~/lib/libbignumber.dylib`)
 - the headers in `${CMAKE_INSTALL_INCLUDEDIR}/bignumber` (`~/include/bignumber/`), including the generated `bignumber_export.h`
-- the CMake package in `~/lib/cmake/bignumber`, exported with namespace `bignumber::` (link `bignumber::bignumber`)
+- the CMake package in `~/lib/cmake/bignumber`, exported with namespace `bignumber::` (link `bignumber::bignumber`):
+  `bignumber.cmake` (the exported targets), `bignumber-config.cmake` (generated from `cmake/bignumber-config.cmake.in`)
+  and `bignumber-config-version.cmake` (`AnyNewerVersion`), so a consumer uses `find_package(bignumber CONFIG)`
+
+The install keeps each file's modification time, so a re-installed but unchanged file (such as the generated
+`bignumber_export.h`) shows its old timestamp. `CMakeLists.txt` also includes CPack for packaging.
 
 The CMake namespace `bignumber::` names the package; the C++ namespace is `big_number`.
 
