@@ -18,16 +18,29 @@ include(CTest)
 
 option(BIGNUMBER_WARNINGS "Compile with -Wall -Wextra -Wshadow -Wconversion" ON)
 if(BIGNUMBER_WARNINGS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    add_compile_options(-Wall -Wextra -Wshadow -Wconversion -Wno-sign-conversion)
+    add_compile_options(-Wall -Wextra -Wshadow -Wconversion -Wsign-conversion)
+endif()
+
+option(BIGNUMBER_WERROR "Treat compiler warnings as errors" OFF)
+if(BIGNUMBER_WERROR AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    add_compile_options(-Werror)
+endif()
+
+# Semicolon-separated list for -fsanitize=, e.g. "address;undefined".
+set(BIGNUMBER_SANITIZERS "" CACHE STRING "Sanitizers to enable, e.g. address;undefined")
+if(BIGNUMBER_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    list(JOIN BIGNUMBER_SANITIZERS "," BIGNUMBER_SANITIZE_FLAGS)
+    add_compile_options(-fsanitize=${BIGNUMBER_SANITIZE_FLAGS} -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=${BIGNUMBER_SANITIZE_FLAGS})
 endif()
 
 add_library(bignumber SHARED
         src/array.cpp
         include/bignumber/array.hpp)
 target_include_directories(bignumber PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/bignumber>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/bignumber>)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_compile_options(bignumber PRIVATE -fvisibility=hidden)
 
 include(GenerateExportHeader)
@@ -53,5 +66,29 @@ if(BUILD_TESTING AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt)
     add_subdirectory(test)
 endif()
 
-
+#Packaging support
+set(CPACK_PACKAGE_VENDOR "Glen Dayton")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Numeric Utilities")
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 include(CPack)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+        "cmake/bignumber-config.cmake.in"
+        "bignumber-config.cmake"
+        INSTALL_DESTINATION
+        "${CMAKE_INSTALL_LIBDIR}/cmake/bignumber")
+
+write_basic_package_version_file(
+        "bignumber-config-version.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion)
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/bignumber-config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/bignumber-config-version.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/bignumber")
