@@ -16,18 +16,18 @@ Open work is tracked in `TODO.md`.
 
 The project uses CMake with C++23 and builds a shared library, `bignumber`.
 
-Do not build in the source tree. Use an out-of-tree build directory named after your agent, `../build/bignumber/<agent>`
-(for example `claude`). CLion uses its own `cmake-build-*` profile directories; do not use those for agent builds.
+Do not build in the source tree. Agents use the out-of-tree build directory `../build/bignumber/agent`. CLion uses its own
+`cmake-build-*` profile directories; do not use those for agent builds.
 
 ```bash
 # Configure (from repo root)
-cmake -B ../build/bignumber/<agent> -S .
+cmake -B ../build/bignumber/agent -S .
 
 # Build all
-cmake --build ../build/bignumber/<agent>
+cmake --build ../build/bignumber/agent
 
 # Run all tests
-ctest --test-dir ../build/bignumber/<agent>
+ctest --test-dir ../build/bignumber/agent
 ```
 
 No tests exist yet. Tests will live in `test/`; the root `CMakeLists.txt` already calls `include(CTest)` and adds `test/`
@@ -38,6 +38,9 @@ only when `test/CMakeLists.txt` exists.
 The root `CMakeLists.txt` compiles with `-Wall -Wextra -Wshadow -Wconversion -Wno-sign-conversion` (option
 `BIGNUMBER_WARNINGS`, on by default; Clang and GCC). Keep the build warning-free: a new warning means new code to fix.
 `-Wsign-conversion` is deliberately off; see Decisions in `TODO.md`.
+
+`BIGNUMBER_WERROR` (default OFF) adds `-Werror`. `BIGNUMBER_SANITIZERS` is a semicolon-separated list for
+`-fsanitize=` (for example `address;undefined`); the `werror` and `asan` presets in `CMakePresets.json` set them.
 
 Warnings come from `add_compile_options` only. Do not also pass `BIGNUMBER_WARNINGS` to `target_compile_options`; it
 expands to `ON` and breaks the compile command.

@@ -2,18 +2,18 @@
 
 ## Open work
 
-- Add tests in `test/` (with a `test/CMakeLists.txt`) for `Array`. Until a test instantiates `Array<T>`, the compiler
-  never checks the template body, so a warning-free build says nothing about it.
-- Finish `Array` in `include/bignumber/array.hpp`:
-  - `create` is declared but never defined, and it is a non-static member, so it cannot be called without an existing
-    `Array`. A factory function should be `static`.
-  - The constructor allocates one element (`new ElementType`) rather than `requestedCapacity` elements
-    (`new ElementType[requestedCapacity]`), and nothing frees `data`: there is no destructor, and copy and move are
-    not handled.
-  - `create` uses unqualified `size_t`; the rest of the header uses `std::size_t`.
-  - `std::expected<Array, std::exception>` stores the error by value, so a derived exception (such as
-    `std::bad_alloc`) is sliced to `std::exception`. Choose an error type.
-  - The `#include` lines come before the include guard; move them inside it.
+- Extend the `Array` tests in `test/test_array.cpp` (Boost.Test, target `test_bignumber`). Only `test_create` exists;
+  cover move construction and move assignment, a zero capacity, and the `Error::bad_allocation` path.
+- `test/test_array.cpp`: `BOOST_CHECK_EQUAL(array.size(), 0)` compares `std::size_t` with `int` and raises
+  `-Wsign-compare` inside Boost; compare with `0U`. It also uses unqualified `size_t` and `std::move` without
+  `<utility>`.
+- `include/bignumber/array.hpp`: `capacity()` and `size()` return unqualified `size_t`; use `std::size_t`.
+- `CMakeLists.txt`: `$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include` puts `/include` outside the generator
+  expression, so the installed `bignumber::bignumber` exports the include directory `/include`. Use
+  `$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>`.
+- `CMakePresets.json`: the `benchmark` and `docs` presets set `BIGNUMBER_BENCHMARKS` and `BIGNUMBER_DOCS`, and the
+  `docs` build preset builds a `docs` target; `CMakeLists.txt` defines none of them. Add them or drop the presets.
+- `AGENTS.md` still says "No tests exist yet"; describe `test/`, the Boost.Test dependency and the presets.
 - Create `.git-blame-ignore-revs` if the LF-normalization commit should be ignored by `git blame`.
 
 ## Decisions
@@ -23,4 +23,6 @@
 - Errors: functions that can fail return `std::optional<>`. Constructors are private and only initialize the structure.
   A construction that can fail goes through a factory function that returns `std::expected<>` (`README.md`).
 - Indentation (open): the mode line says `c-basic-offset:2`, but `array.hpp` uses 4 spaces. Pick one.
+- `Array::create` returns `std::expected<Array, Error>`, where `big_number::Error` is an enum (`bad_allocation`); this
+  replaces `std::exception`, which sliced derived exceptions. Copy is deleted; move is supported.
 - `-Wsign-conversion` is deliberately off. The reason is not yet written down; the owner should add it here.
